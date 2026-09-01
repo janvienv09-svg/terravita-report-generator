@@ -19,7 +19,7 @@ pip install -r requirements.txt
    ```
 3. Set the project id as an env var:
    ```bash
-   export GEE_PROJECT=your-gcp-project-id
+   export GEE_PROJECT=imposing-elixir-479909-t2
    ```
 
 ⚠️ **Commercial use note:** Google Cloud project registration (with usage-based pricing
