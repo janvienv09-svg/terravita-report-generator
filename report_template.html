@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  @page { size: A4; margin: 2cm; }
+  body { font-family: 'Helvetica Neue', Arial, sans-serif; color: #1a1a1a; font-size: 11pt; }
+  h1 { font-size: 20pt; margin-bottom: 0; }
+  .subtitle { color: #666; margin-top: 4px; font-size: 10pt; }
+  h2 { font-size: 14pt; border-bottom: 2px solid #2b6cb0; padding-bottom: 4px; margin-top: 28px; }
+  .meta-table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+  .meta-table td { padding: 4px 8px; border-bottom: 1px solid #eee; }
+  .flag { background: #fff5f5; border-left: 4px solid #e53e3e; padding: 8px 12px; margin: 8px 0; }
+  .ok { background: #f0fff4; border-left: 4px solid #38a169; padding: 8px 12px; margin: 8px 0; }
+  .risk-high { color: #c53030; font-weight: bold; }
+  .risk-moderate { color: #b7791f; font-weight: bold; }
+  .risk-low { color: #2f855a; font-weight: bold; }
+  img.chart { width: 100%; margin: 12px 0; }
+  .disclaimer { margin-top: 40px; padding: 12px; background: #f7fafc; border: 1px solid #cbd5e0;
+                font-size: 9pt; color: #4a5568; }
+  .footer { margin-top: 20px; font-size: 8pt; color: #999; text-align: center; }
+</style>
+</head>
+<body>
+
+  <h1>Land Screening Report</h1>
+  <div class="subtitle">Generated {{ generated_date }} &middot; Coordinates {{ lat }}, {{ lon }} &middot; {{ radius_m }}m radius</div>
+
+  <table class="meta-table">
+    <tr><td><strong>Lookback period</strong></td><td>{{ start_date }} to {{ end_date }}</td></tr>
+    <tr><td><strong>Area analyzed</strong></td><td>~{{ area_hectares }} hectares</td></tr>
+  </table>
+
+  <h2>1. Land Use / Land Cover Change</h2>
+  <p>Dominant land cover in {{ start_date[:4] }}: <strong>{{ lulc.dominant_class_old }}</strong>
+     &rarr; in {{ end_date[:4] }}: <strong>{{ lulc.dominant_class_new }}</strong></p>
+  {% if lulc.flags %}
+    {% for f in lulc.flags %}
+    <div class="flag">⚠ {{ f }}</div>
+    {% endfor %}
+  {% else %}
+    <div class="ok">✓ No major land cover class change detected over the lookback period.</div>
+  {% endif %}
+  {% if ndvi_chart %}<img class="chart" src="{{ ndvi_chart }}" alt="NDVI trend">{% endif %}
+
+  <h2>2. Wetland / Standing Water Check</h2>
+  <p>Historical water occurrence: <strong>{{ "%.0f"|format(wetland.historical_water_occurrence_pct or 0) }}%</strong>
+     of the observed record. Current NDWI signal: <strong>{{ "%.2f"|format(wetland.ndwi_mean or 0) }}</strong></p>
+  {% if wetland.flag %}
+    <div class="flag">⚠ {{ wetland.flag }}</div>
+  {% else %}
+    <div class="ok">✓ No wetland or standing-water signal detected.</div>
+  {% endif %}
+
+  <h2>3. Flood Risk (HAND proxy)</h2>
+  <p>Risk level:
+    <span class="risk-{{ flood.risk_level|lower }}">{{ flood.risk_level }}</span>
+    &middot; Minimum height above nearest drainage: {{ "%.1f"|format(flood.hand_min_m or 0) }} m
+  </p>
+  {% if flood.at_risk %}
+    <div class="flag">⚠ Portions of this area sit at low elevation relative to nearby drainage — elevated flood risk.</div>
+  {% else %}
+    <div class="ok">✓ Elevation relative to nearby drainage does not suggest elevated flood risk.</div>
+  {% endif %}
+
+  <h2>4. Encroachment Check</h2>
+  {% if encroachment.checked %}
+    {% if encroachment.flag %}
+      <div class="flag">⚠ {{ encroachment.flag }}</div>
+    {% else %}
+      <div class="ok">✓ No significant built-up area detected outside the supplied boundary.</div>
+    {% endif %}
+  {% else %}
+    <p><em>{{ encroachment.note }}</em></p>
+  {% endif %}
+
+  {% if map_image %}
+  <h2>5. Map Overview</h2>
+  <img class="chart" src="{{ map_image }}" alt="LULC overlay map">
+  {% endif %}
+
+  <div class="disclaimer">
+    <strong>Disclaimer:</strong> This report is a satellite-derived data screening tool based on
+    publicly available remote sensing datasets (Sentinel-2, ESA WorldCover, JRC Global Surface
+    Water, SRTM). It is <strong>not</strong> a legal survey, title guarantee, or substitute for a
+    licensed surveyor, hydrologist, or attorney. Findings are indicative and should be independently
+    verified before any purchase decision.
+  </div>
+
+  <div class="footer">Report ID: {{ report_id }}</div>
+
+</body>
+</html>
