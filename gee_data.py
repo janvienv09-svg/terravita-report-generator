@@ -27,10 +27,10 @@ def init_ee():
     if _initialized:
         return
     try:
-        ee.Initialize(project=GEE_PROJECT)
+        ee.Initialize(project=imposing-elixir-479909-t2)
     except Exception:
         ee.Authenticate()
-        ee.Initialize(project=GEE_PROJECT)
+        ee.Initialize(project=imposing-elixir-479909-t2)
     _initialized = True
 
 
